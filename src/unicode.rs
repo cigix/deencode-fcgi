@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fs::File;
 
+use serde_json;
+
 pub type CodePoint = u32;
 
 fn codepoint_from_str(s: &str) -> Result<u32, String>
@@ -54,16 +56,16 @@ type UnicodeDatabaseCsvRecord = (
   Option<String>, char, String, String, Option<String>, Option<String>,
   Option<String>);
 
-pub struct UnicodeDatabase(HashMap<CodePoint, UnicodeDatabaseEntry>);
+pub struct UnicodeDatabase(Vec<UnicodeDatabaseEntry>);
 
 impl UnicodeDatabase {
   pub fn from(csv_reader: &mut csv::Reader<File>)
     -> Result<UnicodeDatabase, String>
   {
-    let mut map : HashMap<CodePoint, UnicodeDatabaseEntry> = HashMap::new();
+    let mut database: Vec<UnicodeDatabaseEntry> = Vec::new();
     for csvrecord in csv_reader.deserialize()
     {
-      let record : UnicodeDatabaseCsvRecord = csvrecord
+      let record: UnicodeDatabaseCsvRecord = csvrecord
         .map_err(|e| e.to_string())?;
       let entry = UnicodeDatabaseEntry {
         codepoint: codepoint_from_str(record.0.as_str())?,
@@ -85,14 +87,47 @@ impl UnicodeDatabase {
         simple_titlecase_mapping:
           record.14.map(|c| codepoint_from_str(c.as_str())).transpose()?
       };
-      map.insert(entry.codepoint, entry);
+      database.push(entry);
     }
 
-    Ok(UnicodeDatabase(map))
+    Ok(UnicodeDatabase(database))
   }
 
-  pub fn get(&self, key: u32) -> Option<&UnicodeDatabaseEntry>
+  pub fn iter(&self) -> std::slice::Iter<UnicodeDatabaseEntry>
   {
-    self.0.get(&key)
+    self.0.iter()
+  }
+}
+
+pub struct UnicodeDataJson(HashMap<CodePoint, serde_json::Value>);
+
+impl UnicodeDataJson {
+  pub fn from(database: UnicodeDatabase) -> UnicodeDataJson
+  {
+    let mut map: HashMap<CodePoint, serde_json::Value> = HashMap::new();
+    for entry in database.iter()
+    {
+      map.insert(entry.codepoint, serde_json::json!({
+        "codepoint": format!("U+{:04X}", entry.codepoint),
+        "name": if entry.name == "<control>" {
+          format!("(control) {}", entry.unicode_1_name)
+        } else {
+          entry.name.clone()
+        }
+      }));
+    }
+    UnicodeDataJson(map)
+  }
+
+  pub fn get(&self, key: char) -> Option<serde_json::Value>
+  {
+    let codepoint: CodePoint = key as u32;
+    let object = self.0.get(&codepoint)?;
+    if let serde_json::Value::Object(mut map) = object.to_owned() {
+      map.insert(String::from("character"), serde_json::json!(key));
+      Some(serde_json::Value::Object(map))
+    } else {
+      panic!("Expected JSON object")
+    }
   }
 }

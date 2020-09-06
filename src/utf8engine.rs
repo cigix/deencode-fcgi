@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
+use serde_json;
+
 use crate::unicode;
 use crate::engine;
 
 pub struct Utf8Engine {
-  unicode_data: Arc<unicode::UnicodeDatabase>
+  unicode_data_json: Arc<unicode::UnicodeDataJson>
 }
 
 impl Utf8Engine {
-  pub fn new(unicode_data: &Arc<unicode::UnicodeDatabase>) -> Utf8Engine
+  pub fn new(unicode_data_json: &Arc<unicode::UnicodeDataJson>) -> Utf8Engine
   {
-    Utf8Engine { unicode_data: unicode_data.clone() }
+    Utf8Engine { unicode_data_json: unicode_data_json.clone() }
   }
 }
 
@@ -22,15 +24,16 @@ impl engine::Engine for Utf8Engine {
                            e.into_bytes()))
   }
 
-  fn describe(&self, string: &String) -> Vec<String>
+  fn describe(&self, string: &String) -> Vec<serde_json::Value>
   {
-    let mut res: Vec<String> = Vec::with_capacity(string.len());
-    for c in string.chars()
-    {
-      res.push(format!("{:2} U+{:04X} {}", c, c as u32,
-                       self.unicode_data.get(c as u32).unwrap().name));
-    }
-    return res;
+    string.chars()
+      .map(|c| self.unicode_data_json.get(c).unwrap())
+      .collect()
+  }
+
+  fn get_name(&self) -> String
+  {
+    String::from("UTF-8")
   }
 }
 

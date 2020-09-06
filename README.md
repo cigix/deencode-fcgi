@@ -18,13 +18,23 @@
 
 ## Behaviour
 
-*The data received could be any set of bytes; the data sent back is always UTF-8
-encoded.*
+*The data received could be any set of bytes; `deencode_fcgi` ignores the HTTP
+header completely, including the request method and `Content-Type` parameter.*
+
+*The data sent back by `deencode_fcgi` is always valid JSON, with all non-ASCII
+characters escaped.*
 
 Any data sent in the body of any request is parsed through a number of encoding 
-engines. Each engine either returns an error because the data could not be
-parsed in its encoding, or the reencoded string followed by a character by
-character description of the string.
+engines. Each engine will be an object with:
+* in case of parsing error:
+  * an "error" field, a string with the reason for the parsing error
+* in case of successful parsing
+  * a "parsed" field, a string as parsed by the engine"
+  * a "description" field, an array of objects for each character of the form:
+    * "character", a string containing only the character
+    * "codepoint", a string with the usual text representation of that character
+      for that encoding
+    * "name", a string with a description of the character
 
 Currently implemented engines:
 * UTF-8
@@ -34,9 +44,27 @@ Currently implemented engines:
 ```bash
 $ xxd -p t
 61c39fc999
-$ cat t | curl localhost -d @-
-aßə
-a  U+0061 LATIN SMALL LETTER A
-ß  U+00DF LATIN SMALL LETTER SHARP S
-ə  U+0259 LATIN SMALL LETTER SCHWA
+$ curl localhost --data-binary @t | python3 -m json.tool | xargs -0 printf
+{
+    "UTF-8": {
+        "description": [
+            {
+                "character": "a",
+                "codepoint": "U+0061",
+                "name": "LATIN SMALL LETTER A"
+            },
+            {
+                "character": "ß",
+                "codepoint": "U+00DF",
+                "name": "LATIN SMALL LETTER SHARP S"
+            },
+            {
+                "character": "ə",
+                "codepoint": "U+0259",
+                "name": "LATIN SMALL LETTER SCHWA"
+            }
+        ],
+        "parsed": "aßə"
+    }
+}
 ```
