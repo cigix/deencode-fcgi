@@ -25,10 +25,10 @@ header completely, including the request method and `Content-Type` parameter.*
 characters escaped.*
 
 Any data sent in the body of any request is parsed through a number of encoding 
-engines. Each engine will be an object with:
+engines. Each engine will give back an object with:
 * in case of parsing error:
   * an "error" field, a string with the reason for the parsing error
-* in case of successful parsing
+* in case of successful parsing:
   * a "parsed" field, a string as parsed by the engine"
   * a "description" field, an array of objects for each character of the form:
     * "character", a string containing only the character
@@ -38,6 +38,8 @@ engines. Each engine will be an object with:
 
 Currently implemented engines:
 * UTF-8
+* UTF-16 Big endian
+* UTF-16 Little endian
 
 ## Example
 

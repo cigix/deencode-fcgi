@@ -130,4 +130,13 @@ impl UnicodeDataJson {
       panic!("Expected JSON object")
     }
   }
+
+  pub fn describe(&self, key: char) -> serde_json::Value
+  {
+    self.get(key).unwrap_or(serde_json::json!({
+      "character": key,
+      "codepoint": format!("U+{:04X}", key as u32),
+      "name": "Codepoint not in database"
+    }))
+  }
 }

@@ -9,6 +9,7 @@ use std::sync::Arc;
 mod engine;
 mod unicode;
 mod utf8engine;
+mod utf16engine;
 
 fn handle_request(request: &mut fastcgi::Request,
                   engines: &Vec<Box<dyn engine::Engine>>) -> String
@@ -48,7 +49,13 @@ fn main()
     unicode::UnicodeDataJson::from(unicode_database));
 
   let utf8 = utf8engine::Utf8Engine::new(&unicode_data_json);
-  let engines: Vec<Box<dyn engine::Engine>> = vec![Box::new(utf8)];
+  let utf16be = utf16engine::Utf16BEEngine::new(&unicode_data_json);
+  let utf16le = utf16engine::Utf16LEEngine::new(&unicode_data_json);
+  let engines: Vec<Box<dyn engine::Engine>> = vec![
+    Box::new(utf8),
+    Box::new(utf16be),
+    Box::new(utf16le)
+  ];
 
   let listener = TcpListener::bind("127.0.0.1:9000").unwrap();
   println!("Running on {:?}", listener);

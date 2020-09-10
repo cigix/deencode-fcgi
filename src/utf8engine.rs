@@ -27,7 +27,7 @@ impl engine::Engine for Utf8Engine {
   fn describe(&self, string: &String) -> Vec<serde_json::Value>
   {
     string.chars()
-      .map(|c| self.unicode_data_json.get(c).unwrap())
+      .map(|c| self.unicode_data_json.describe(c))
       .collect()
   }
 
