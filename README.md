@@ -12,7 +12,7 @@
    ```
 3. Start your FastCGI enabled web server. The FastCGI server listens on
    `localhost:9000`. An example server configuration for NGINX is given in
-   [`deencode.nginx.example`][deencode.nginx.example].
+   [`deencode.nginx.example`](deencode.nginx.example).
 4. Shazam! You should now have an endpoint of your web server connected to
    `deencode_fcgi`.
 
